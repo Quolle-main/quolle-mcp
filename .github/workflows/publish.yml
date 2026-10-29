@@ -21,4 +21,12 @@ jobs:
       # npm Trusted Publishing: npm authenticates with this workflow's OIDC
       # token (id-token: write above), so no NPM_TOKEN secret is stored. Set up
       # once per package on npmjs.com → package → Settings → Trusted publisher.
-      - run: npm publish --provenance --access public
+      # Re-running a release, or releasing a version first published by hand,
+      # shouldn't fail on "cannot publish over an existing version".
+      - id: published
+        run: |
+          if npm view "$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")" version >/dev/null 2>&1; then
+            echo "already=true" >> "$GITHUB_OUTPUT"; echo "Already on npm; skipping publish."
+          fi
+      - if: steps.published.outputs.already != 'true'
+        run: npm publish --provenance --access public
