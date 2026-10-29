@@ -16,7 +16,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 const BASE_URL = process.env.QUOLLE_BASE_URL?.replace(/\/+$/, "") || "https://api.quolle.com";
 const API_KEY = process.env.QUOLLE_API_KEY;
 const MAX_RETRIES = 3;
