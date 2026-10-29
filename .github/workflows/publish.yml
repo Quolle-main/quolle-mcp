@@ -9,8 +9,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
@@ -18,8 +18,7 @@ jobs:
       - run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: npm ci
       - run: npm run build
-      # With a Trusted Publisher configured on npmjs.com, NPM_TOKEN can be
-      # removed: npm authenticates with the workflow's OIDC token instead.
+      # npm Trusted Publishing: npm authenticates with this workflow's OIDC
+      # token (id-token: write above), so no NPM_TOKEN secret is stored. Set up
+      # once per package on npmjs.com → package → Settings → Trusted publisher.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
