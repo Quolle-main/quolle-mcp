@@ -1,6 +1,6 @@
 {
   "name": "@quolle/mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Official Quolle MCP server — let AI agents send transactional email via Quolle",
   "license": "MIT",
   "homepage": "https://quolle.com",

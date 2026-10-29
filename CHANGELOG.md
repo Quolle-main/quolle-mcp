@@ -2,6 +2,10 @@
 
 All notable changes to this package. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.1.1 — 2026-10-29
+
+- Published from GitHub Actions through npm Trusted Publishing, with a provenance attestation linking this version to the commit and workflow that built it. No code changes.
+
 ## 1.1.0 — 2026-10-29
 
 First public release.
