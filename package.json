@@ -3,6 +3,12 @@
   "version": "1.1.0",
   "description": "Official Quolle MCP server — let AI agents send transactional email via Quolle",
   "license": "MIT",
+  "homepage": "https://quolle.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Quolle-main/quolle-mcp.git"
+  },
+  "bugs": "https://github.com/Quolle-main/quolle-mcp/issues",
   "type": "module",
   "bin": {
     "quolle-mcp": "dist/index.js"
@@ -24,7 +30,7 @@
     "agent"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

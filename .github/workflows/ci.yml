@@ -1,12 +1,23 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  # Weekly on ubuntu-latest, so a runner or toolchain change fails on a quiet
+  # Monday instead of on the next pull request.
+  schedule:
+    - cron: "17 6 * * 1"
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every Node release line still receiving updates.
+        node: ["20", "22", "24"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ matrix.node }}
       - run: npm install
       - run: npm run build
