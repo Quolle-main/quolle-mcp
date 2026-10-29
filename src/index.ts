@@ -24,8 +24,8 @@ const MAX_RETRIES = 3;
 type ApiResult = { ok: boolean; status: number; data: Record<string, unknown> };
 
 // ── Authenticated fetch to the Quolle API ─────────────────────────────────────
-// Same retry rules as the SDKs: a 429 was never processed, so it is always
-// retried (honouring Retry-After); a 5xx or network error is retried only for
+// Same retry rules as the SDKs: a 429 was never processed, so it is retried
+// (honouring Retry-After) unless it is a quota limit; a 5xx or network error is retried only for
 // GET/DELETE or when an Idempotency-Key makes the POST safe to repeat.
 async function api(
   method: string,
@@ -64,20 +64,28 @@ async function api(
       return { ok: false, status: 0, data: { error: `Network error: ${(err as Error).message}` } };
     }
 
-    const retryable = res.status === 429 || (res.status >= 500 && res.status <= 504 && safeToRepeat);
-    if (retryable && attempt < MAX_RETRIES) {
-      await sleep(retryAfterMs(res.headers.get("retry-after")) ?? backoffMs(attempt));
-      continue;
-    }
-
     const text = await res.text();
     let data: Record<string, unknown> = {};
+    let parsed = true;
     try {
       data = text ? JSON.parse(text) : {};
     } catch {
+      parsed = false;
       data = { error: "Unexpected non-JSON response from the Quolle API", raw: text.slice(0, 500) };
-      return { ok: false, status: res.status, data };
     }
+
+    // A quota 429 resets at midnight UTC or the next period, and a Retry-After
+    // over a minute means "not soon": hand the agent the code at once so it can
+    // tell the user, rather than stalling the tool call.
+    const code = typeof data.code === "string" ? data.code : "";
+    const wait = retryAfterMs(res.headers.get("retry-after"));
+    const retryable =
+      (res.status === 429 && !NO_RETRY_CODES.has(code)) || (res.status >= 500 && res.status <= 504 && safeToRepeat);
+    if (retryable && attempt < MAX_RETRIES && (wait === null || wait <= MAX_RETRY_WAIT_MS)) {
+      await sleep(wait ?? backoffMs(attempt));
+      continue;
+    }
+    if (!parsed) return { ok: false, status: res.status, data };
     return { ok: res.ok, status: res.status, data };
   }
 }
@@ -87,8 +95,10 @@ function backoffMs(attempt: number): number {
 }
 function retryAfterMs(h: string | null): number | null {
   const secs = h ? Number(h) : NaN;
-  return Number.isFinite(secs) ? Math.min(secs * 1000, 30_000) : null;
+  return Number.isFinite(secs) ? Math.max(0, secs * 1000) : null;
 }
+const NO_RETRY_CODES = new Set(["daily_quota_exceeded", "warmup_limit_exceeded", "monthly_quota_exceeded"]);
+const MAX_RETRY_WAIT_MS = 60_000;
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
