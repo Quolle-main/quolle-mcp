@@ -9,8 +9,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
@@ -18,8 +18,15 @@ jobs:
       - run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: npm ci
       - run: npm run build
-      # With a Trusted Publisher configured on npmjs.com, NPM_TOKEN can be
-      # removed: npm authenticates with the workflow's OIDC token instead.
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # npm Trusted Publishing: npm authenticates with this workflow's OIDC
+      # token (id-token: write above), so no NPM_TOKEN secret is stored. Set up
+      # once per package on npmjs.com → package → Settings → Trusted publisher.
+      # Re-running a release, or releasing a version first published by hand,
+      # shouldn't fail on "cannot publish over an existing version".
+      - id: published
+        run: |
+          if npm view "$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")" version >/dev/null 2>&1; then
+            echo "already=true" >> "$GITHUB_OUTPUT"; echo "Already on npm; skipping publish."
+          fi
+      - if: steps.published.outputs.already != 'true'
+        run: npm publish --provenance --access public
